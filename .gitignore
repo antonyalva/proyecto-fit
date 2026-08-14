@@ -1,0 +1,15 @@
+node_modules
+dist
+dev-dist
+
+# Tus claves de Supabase. .env.example sí se versiona; esto no.
+.env.local
+*.local
+
+# Permisos de Claude Code propios de esta máquina, no del proyecto.
+.claude/settings.local.json
+
+# Caché incremental de tsc: se regenera sola, no aporta nada en el repo.
+tsconfig.tsbuildinfo
+
+.DS_Store

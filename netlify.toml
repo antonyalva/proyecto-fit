@@ -1,0 +1,29 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # Fijado a la versión con la que se probó el proyecto, para que el build
+  # remoto de Netlify no se comporte distinto al build local por una versión
+  # de Node diferente.
+  NODE_VERSION = "24"
+
+# El service worker y el HTML de entrada no deben quedarse en caché del CDN:
+# son los dos archivos que el navegador tiene que revisar en cada visita para
+# enterarse de que hay una versión nueva. Los assets con hash en el nombre
+# (todo lo demás en dist/assets/) sí pueden cachearse para siempre sin riesgo,
+# porque un cambio de contenido les cambia el nombre de archivo.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "no-cache"

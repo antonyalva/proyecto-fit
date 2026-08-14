@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f1115" />
+    <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+    <!-- Safari ignora el manifiesto y solo mira esto; el SVG no le vale. -->
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+
+    <!--
+      Safari ignora casi todo el manifiesto (display, start_url, la mayoría de
+      iconos) y solo obedece estas etiquetas propias. Sin ellas, "Añadir a
+      pantalla de inicio" abre igualmente la app, pero dentro de una ventana de
+      Safari con su barra de direcciones — no en modo standalone.
+    -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- black-translucent dibuja debajo del notch; por eso .app añade
+         padding-top con env(safe-area-inset-top) en styles.css. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Proteína" />
+
+    <title>Proteína &amp; Suplementos</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
