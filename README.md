@@ -138,8 +138,8 @@ a pantalla de inicio* desde Safari, apuntando a la misma URL de Netlify.
   de tu ración habitual, así que si un alimento no llega te dice qué porcentaje cubre en
   vez de proponerte medio kilo de pollo.
 - **Comida** — tu catálogo, agrupado en Carnes, Pescados y mariscos, Huevos y lácteos,
-  Legumbres y granos, Frutos secos y semillas y Suplementos. Viene con 37 alimentos que se
-  consiguen en Lima, incluidos los que aquí salen a cuenta y en otros sitios no: tarwi
+  Legumbres y granos, Frutas, Frutos secos y semillas y Suplementos. Viene con 38 alimentos
+  que se consiguen en Lima, incluidos los que aquí salen a cuenta y en otros sitios no: tarwi
   (17 g/100 g, excepcional para una legumbre), anchoveta y caballa en conserva, pota,
   sangrecita e hígado. Cada uno se define por su **proteína por 100 g**,
   que es lo que no depende de la ración, más la ración que tú sueles comer. Puedes crear,
@@ -197,6 +197,23 @@ sesión en vez de dejarte fuera — el service worker sirve la app entera desde 
 login se salta cuando no hay forma de validarlo. Se sincroniza solo en cuanto vuelve la red.
 Esa puerta trasera se cierra sola al cerrar sesión: apagar el wifi después no sirve para
 volver a entrar.
+
+### Alimentos por unidades
+
+Hay cosas que nadie pesa antes de comer: un plátano, dos huevos, una manzana. Al crear o
+editar un alimento en **Comida**, marca *"Se mide por unidades"* y define el nombre de la
+unidad (`plátano`) y cuántos gramos pesa una (`118`). A partir de ahí la app te pregunta
+"Cantidad (plátano)" en vez de gramos, y muestra `2 × plátano (236 g)` en todas partes:
+botones de Hoy, plan semanal, historial y sugerencias.
+
+Por dentro **todo se sigue guardando en gramos** — el plan, el historial y la
+sincronización no cambian. Las unidades son solo una capa de entrada y presentación, así
+que un alimento puede pasar de gramos a unidades (o al revés) sin invalidar nada de lo ya
+registrado. Las sugerencias además redondean a unidades enteras: nadie sirve medio plátano
+para cerrar un hueco de proteína.
+
+Los dos campos van juntos: un nombre de unidad sin su peso no sirve para calcular nada, así
+que la app trata el alimento como "por peso" mientras falte cualquiera de los dos.
 
 ### Varias cuentas en un mismo dispositivo
 

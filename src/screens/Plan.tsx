@@ -1,7 +1,14 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '../store'
 import { useToast } from '../toast'
-import { dailyTarget, proteinFor } from '../lib/nutrition'
+import {
+  dailyTarget,
+  formatQuantity,
+  gramsFromUnits,
+  isUnitFood,
+  proteinFor,
+  unitsFromGrams,
+} from '../lib/nutrition'
 import { suggestForGap } from '../lib/suggest'
 import { uid } from '../lib/storage'
 import {
@@ -313,7 +320,7 @@ function Suggestions({
             <span className="preset-emoji">{s.food.emoji}</span>
             <div className="row-main">
               <div className="row-title">
-                {s.food.name} · {s.grams} g
+                {s.food.name} · {formatQuantity(s.food, s.grams)}
               </div>
               <div className="row-sub">
                 {s.protein} g de proteína{covers < 95 && ` · cubre el ${covers}% del hueco`}
@@ -377,7 +384,7 @@ function MealCard({
 }: MealCardProps) {
   const [adding, setAdding] = useState(false)
   const [foodId, setFoodId] = useState(foods[0]?.id ?? '')
-  const [grams, setGrams] = useState('')
+  const [amount, setAmount] = useState('')
   const [days, setDays] = useState<number[]>([day])
 
   const proteinOf = (item: PlanItem) => {
@@ -393,7 +400,13 @@ function MealCard({
   const allDone = dayItems.length > 0 && pending.length === 0
 
   const chosen = foods.find((f) => f.id === foodId) ?? null
-  const gramsNum = Number(grams) || chosen?.defaultPortionG || 0
+  const chosenIsUnit = chosen ? isUnitFood(chosen) : false
+  const amountNum = Number(amount)
+  const gramsNum = amount
+    ? chosenIsUnit && chosen
+      ? gramsFromUnits(chosen, amountNum)
+      : amountNum
+    : chosen?.defaultPortionG || 0
 
   function addItem() {
     if (!chosen || !(gramsNum > 0) || days.length === 0) return
@@ -406,7 +419,7 @@ function MealCard({
       updatedAt: 0,
       deleted: false,
     })
-    setGrams('')
+    setAmount('')
     setDays([day])
     setAdding(false)
   }
@@ -467,7 +480,7 @@ function MealCard({
                     {food.name}
                   </div>
                   <div className="row-sub">
-                    {item.grams} g · {proteinOf(item)} g de proteína
+                    {formatQuantity(food, item.grams)} · {proteinOf(item)} g de proteína
                     {!everyDay && (
                       <> · solo {item.days.map((d) => WEEKDAY_SHORT[d]).join(' ')}</>
                     )}
@@ -491,12 +504,17 @@ function MealCard({
                       className="btn-icon"
                       aria-label={`Cambiar cantidad de ${food.name}`}
                       onClick={() => {
+                        const unit = isUnitFood(food)
                         const value = window.prompt(
-                          `¿Cuántos gramos de ${food.name.toLowerCase()}?`,
-                          String(item.grams),
+                          unit
+                            ? `Cantidad (${food.unitLabel})`
+                            : `¿Cuántos gramos de ${food.name.toLowerCase()}?`,
+                          unit ? String(unitsFromGrams(food, item.grams)) : String(item.grams),
                         )
-                        const next = Number(value)
-                        if (next > 0) onSaveItem({ ...item, grams: next })
+                        const num = Number(value)
+                        if (!(num > 0)) return
+                        const nextGrams = unit ? gramsFromUnits(food, num) : num
+                        onSaveItem({ ...item, grams: nextGrams })
                       }}
                     >
                       ✎
@@ -541,15 +559,22 @@ function MealCard({
             </div>
             <div className="field">
               <label htmlFor={`g-${meal.id}`}>
-                Gramos {chosen && `(tu ración: ${chosen.defaultPortionG} g)`}
+                {chosen && chosenIsUnit
+                  ? `Cantidad (${chosen.unitLabel}) — tu ración: ${formatQuantity(chosen, chosen.defaultPortionG)}`
+                  : `Gramos ${chosen ? `(tu ración: ${chosen.defaultPortionG} g)` : ''}`}
               </label>
               <input
                 id={`g-${meal.id}`}
                 type="number"
                 inputMode="decimal"
-                placeholder={String(chosen?.defaultPortionG ?? 100)}
-                value={grams}
-                onChange={(e) => setGrams(e.target.value)}
+                step={chosenIsUnit ? '0.5' : undefined}
+                placeholder={
+                  chosen && chosenIsUnit
+                    ? String(unitsFromGrams(chosen, chosen.defaultPortionG))
+                    : String(chosen?.defaultPortionG ?? 100)
+                }
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && addItem()}
               />
             </div>
@@ -559,7 +584,7 @@ function MealCard({
             </div>
             {chosen && gramsNum > 0 && days.length > 0 && (
               <p className="row-sub" style={{ marginBottom: 12 }}>
-                Añadirá{' '}
+                Añadirá {formatQuantity(chosen, gramsNum)} ·{' '}
                 <strong style={{ color: 'var(--text)' }}>
                   {proteinFor(chosen, gramsNum)} g
                 </strong>{' '}

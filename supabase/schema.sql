@@ -86,6 +86,12 @@ alter table public.plan_items
 alter table public.foods
   add column if not exists category text not null default 'otros';
 
+-- Ambas nulas = el alimento se registra por peso (comportamiento de siempre).
+-- Ambas presentes = se piensa "por unidades" (1 plátano, 2 huevos).
+alter table public.foods
+  add column if not exists unit_label text,
+  add column if not exists unit_grams numeric;
+
 -- Sin claves foráneas a meals/foods a propósito: al sincronizar, las filas de dos
 -- tablas pueden llegar en cualquier orden, y una foránea rechazaría el item que
 -- llega antes que su comida. La app ignora los items huérfanos, que es más

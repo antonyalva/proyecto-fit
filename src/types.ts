@@ -27,6 +27,7 @@ export type FoodCategory =
   | 'pescados'
   | 'huevos-lacteos'
   | 'legumbres'
+  | 'frutas'
   | 'frutos-secos'
   | 'suplementos'
   | 'otros'
@@ -42,6 +43,14 @@ export interface Food extends Syncable {
   proteinPer100g: number
   defaultPortionG: number
   category: FoodCategory
+  /**
+   * Ambos presentes = el alimento se piensa "por unidades" (1 plátano, 2 huevos)
+   * en vez de por peso suelto. Los gramos siguen siendo la fuente de verdad para
+   * todo lo demás — plan, historial, sincronización —; esto es solo una capa de
+   * entrada más natural para lo que nadie pesa antes de comer.
+   */
+  unitLabel?: string
+  unitGrams?: number
 }
 
 /** Una comida del plan: Desayuno, Comida, Post-entreno, Cena… */

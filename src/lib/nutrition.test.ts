@@ -1,6 +1,14 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { dailyTarget, perServingTarget, proteinFor } from './nutrition.ts'
+import {
+  dailyTarget,
+  formatQuantity,
+  gramsFromUnits,
+  isUnitFood,
+  perServingTarget,
+  proteinFor,
+  unitsFromGrams,
+} from './nutrition.ts'
 import type { Food } from '../types.ts'
 
 const pollo: Food = {
@@ -10,6 +18,19 @@ const pollo: Food = {
   proteinPer100g: 23,
   defaultPortionG: 150,
   category: 'otros',
+  updatedAt: 0,
+  deleted: false,
+}
+
+const platano: Food = {
+  id: 'f-platano',
+  name: 'Plátano',
+  emoji: '🍌',
+  proteinPer100g: 1.1,
+  defaultPortionG: 118,
+  category: 'frutas',
+  unitLabel: 'plátano',
+  unitGrams: 118,
   updatedAt: 0,
   deleted: false,
 }
@@ -46,4 +67,44 @@ test('el objetivo por toma se queda dentro del rango útil de 20 a 40 g', () => 
   assert.equal(perServingTarget(50), 20, 'una persona ligera no baja de 20 g')
   assert.equal(perServingTarget(75), 23)
   assert.equal(perServingTarget(200), 40, 'una persona muy pesada no pasa de 40 g')
+})
+
+test('un alimento por gramos no es "por unidades"', () => {
+  assert.equal(isUnitFood(pollo), false)
+})
+
+test('un alimento con nombre y peso de unidad sí lo es', () => {
+  assert.equal(isUnitFood(platano), true)
+})
+
+test('faltando la mitad del par no cuenta como "por unidades"', () => {
+  // Un nombre de unidad sin su peso no sirve para calcular nada, y viceversa.
+  assert.equal(isUnitFood({ ...platano, unitGrams: undefined }), false)
+  assert.equal(isUnitFood({ ...platano, unitLabel: undefined }), false)
+  assert.equal(isUnitFood({ ...platano, unitGrams: 0 }), false)
+})
+
+test('convierte unidades a gramos y de vuelta sin perder la cantidad', () => {
+  assert.equal(gramsFromUnits(platano, 2), 236)
+  assert.equal(unitsFromGrams(platano, 236), 2)
+  assert.equal(unitsFromGrams(platano, 118), 1)
+})
+
+test('un alimento por gramos no convierte nada: no tiene unidad que valga', () => {
+  assert.equal(gramsFromUnits(pollo, 2), 0)
+  assert.equal(unitsFromGrams(pollo, 300), 0)
+})
+
+test('formatQuantity muestra gramos para lo que se pesa', () => {
+  assert.equal(formatQuantity(pollo, 150), '150 g')
+})
+
+test('formatQuantity muestra unidades para lo que se cuenta', () => {
+  assert.equal(formatQuantity(platano, 118), '1 × plátano (118 g)')
+  assert.equal(formatQuantity(platano, 236), '2 × plátano (236 g)')
+})
+
+test('formatQuantity redondea unidades fraccionarias a una décima', () => {
+  // Media unidad real (59 g de un plátano de 118 g) debe leerse "0.5 × plátano", no "0.4999...".
+  assert.equal(formatQuantity(platano, 59), '0.5 × plátano (59 g)')
 })

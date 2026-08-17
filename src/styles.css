@@ -295,6 +295,24 @@ select:focus {
   margin-bottom: 14px;
 }
 
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 14px;
+  cursor: pointer;
+}
+
+.check-row input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  flex: none;
+}
+
 .field-pair {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -3,7 +3,15 @@ import { useStore } from '../store'
 import { useToast } from '../toast'
 import { ProgressRing } from '../components/ProgressRing'
 import { SyncBanner } from '../components/SyncBanner'
-import { dailyTarget, perServingTarget, proteinFor } from '../lib/nutrition'
+import {
+  dailyTarget,
+  formatQuantity,
+  gramsFromUnits,
+  isUnitFood,
+  perServingTarget,
+  proteinFor,
+  unitsFromGrams,
+} from '../lib/nutrition'
 import { CATEGORY_LABEL, CATEGORY_ORDER } from '../lib/storage'
 import { addDays, todayKey } from '../lib/date'
 import type { Food } from '../types'
@@ -17,7 +25,7 @@ function FoodButton({ food, onPick }: { food: Food; onPick: (f: Food) => void })
       <span>
         <span className="preset-name">{food.name}</span>
         <span className="preset-grams" style={{ display: 'block' }}>
-          {food.defaultPortionG} g · {proteinFor(food, food.defaultPortionG)} g prot.
+          {formatQuantity(food, food.defaultPortionG)} · {proteinFor(food, food.defaultPortionG)} g prot.
         </span>
       </span>
     </button>
@@ -43,12 +51,16 @@ export function Today({ onGoToProfile }: { onGoToProfile: () => void }) {
   )
 
   const chosen = view.foods.find((f) => f.id === foodId) ?? null
+  const chosenIsUnit = chosen ? isUnitFood(chosen) : false
   const amountNum = Number(amount)
-  const preview = chosen && amountNum > 0 ? proteinFor(chosen, amountNum) : null
+  // Lo que teclea el usuario se interpreta como unidades o como gramos sueltos
+  // según el alimento — pero por dentro siempre se guarda en gramos.
+  const grams = chosen && chosenIsUnit ? gramsFromUnits(chosen, amountNum) : amountNum
+  const preview = chosen && amountNum > 0 ? proteinFor(chosen, grams) : null
 
   function pick(food: Food) {
     addFoodEntry(food, food.defaultPortionG)
-    toast(`+${proteinFor(food, food.defaultPortionG)} g`)
+    toast(`${formatQuantity(food, food.defaultPortionG)} · +${proteinFor(food, food.defaultPortionG)} g`)
   }
 
   /** Los seis que más has registrado en las últimas semanas. */
@@ -74,11 +86,20 @@ export function Today({ onGoToProfile }: { onGoToProfile: () => void }) {
     })).filter((g) => g.foods.length > 0)
   }, [view.foods, frequent])
 
+  /**
+   * "1 × plátano (118 g)" si el alimento sigue en el catálogo, o el gramaje
+   * suelto si se borró después de registrarlo — no hay de dónde sacar la unidad.
+   */
+  function quantityLabel(entry: (typeof entries)[number]): string {
+    const food = entry.foodId ? view.foods.find((f) => f.id === entry.foodId) : null
+    return food && entry.grams ? formatQuantity(food, entry.grams) : `${entry.grams} g`
+  }
+
   function submitCustom() {
     if (!(amountNum > 0)) return
     if (chosen) {
-      addFoodEntry(chosen, amountNum)
-      toast(`${amountNum} g · +${proteinFor(chosen, amountNum)} g`)
+      addFoodEntry(chosen, grams)
+      toast(`${formatQuantity(chosen, grams)} · +${proteinFor(chosen, grams)} g`)
     } else {
       addEntry('Proteína suelta', Math.round(amountNum * 10) / 10)
       toast(`+${Math.round(amountNum)} g`)
@@ -201,14 +222,25 @@ export function Today({ onGoToProfile }: { onGoToProfile: () => void }) {
         </div>
 
         <label htmlFor="amount">
-          {chosen ? `Gramos de ${chosen.name.toLowerCase()}` : 'Gramos de proteína'}
+          {chosen
+            ? chosenIsUnit
+              ? `Cantidad (${chosen.unitLabel})`
+              : `Gramos de ${chosen.name.toLowerCase()}`
+            : 'Gramos de proteína'}
         </label>
         <div style={{ display: 'flex', gap: 8 }}>
           <input
             id="amount"
             type="number"
             inputMode="decimal"
-            placeholder={chosen ? String(chosen.defaultPortionG) : '25'}
+            step={chosenIsUnit ? '0.5' : undefined}
+            placeholder={
+              chosen
+                ? chosenIsUnit
+                  ? String(unitsFromGrams(chosen, chosen.defaultPortionG))
+                  : String(chosen.defaultPortionG)
+                : '25'
+            }
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && submitCustom()}
@@ -217,9 +249,9 @@ export function Today({ onGoToProfile }: { onGoToProfile: () => void }) {
             Sumar
           </button>
         </div>
-        {preview !== null && (
+        {preview !== null && chosen && (
           <p className="row-sub" style={{ marginTop: 8 }}>
-            {amountNum} g de {chosen?.name.toLowerCase()} son{' '}
+            {formatQuantity(chosen, grams)} de {chosen.name.toLowerCase()} son{' '}
             <strong style={{ color: 'var(--text)' }}>{preview} g</strong> de proteína.
           </p>
         )}
@@ -235,7 +267,7 @@ export function Today({ onGoToProfile }: { onGoToProfile: () => void }) {
               <div className="row-main">
                 <div className="row-title">{e.name}</div>
                 <div className="row-sub">
-                  {e.grams ? `${e.grams} g · ` : ''}
+                  {e.grams ? `${quantityLabel(e)} · ` : ''}
                   {new Date(e.ts).toLocaleTimeString('es-ES', {
                     hour: '2-digit',
                     minute: '2-digit',

@@ -13,3 +13,6 @@ dev-dist
 tsconfig.tsbuildinfo
 
 .DS_Store
+
+# Instalador de Claude Code que se descargó aquí por accidente, no es del proyecto.
+install.cmd

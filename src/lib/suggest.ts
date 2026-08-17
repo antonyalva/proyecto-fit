@@ -1,5 +1,5 @@
 import type { Food } from '../types'
-import { proteinFor } from './nutrition.ts'
+import { isUnitFood, proteinFor } from './nutrition.ts'
 
 export interface Suggestion {
   food: Food
@@ -15,6 +15,19 @@ export interface Suggestion {
 const MIN_DENSITY = 5
 
 const roundTo5 = (x: number) => Math.round(x / 5) * 5
+
+/**
+ * Redondea a lo que de verdad se puede servir: unidades enteras para lo que se
+ * cuenta (nadie sirve 0.5 plátanos), a 5 g para lo que se pesa. Nunca menos de
+ * una unidad — 0 unidades no es una sugerencia, es no sugerir nada.
+ */
+function roundQuantity(food: Food, grams: number): number {
+  if (isUnitFood(food)) {
+    const units = Math.max(1, Math.round(grams / food.unitGrams))
+    return units * food.unitGrams
+  }
+  return roundTo5(grams)
+}
 
 /**
  * Qué comer para cerrar un hueco de proteína, con la cantidad ya calculada.
@@ -41,9 +54,9 @@ export function suggestForGap(
     if (!(food.defaultPortionG > 0)) return null
 
     const exact = (gap * 100) / food.proteinPer100g
-    const min = Math.max(5, roundTo5(food.defaultPortionG * 0.4))
-    const max = Math.max(min, roundTo5(food.defaultPortionG * 2))
-    const grams = Math.min(max, Math.max(min, roundTo5(exact)))
+    const min = Math.max(5, roundQuantity(food, food.defaultPortionG * 0.4))
+    const max = Math.max(min, roundQuantity(food, food.defaultPortionG * 2))
+    const grams = Math.min(max, Math.max(min, roundQuantity(food, exact)))
 
     return { food, grams, protein: proteinFor(food, grams) }
   }

@@ -20,6 +20,7 @@ const atun = food('f-atun', 25, 80)
 const pollo = food('f-pollo', 23, 150)
 const whey = food('f-whey', 80, 30)
 const quinua = food('f-quinua', 4.4, 200)
+const huevo: Food = { ...food('f-huevo', 13, 150), unitLabel: 'huevo', unitGrams: 50 }
 
 test('calcula la cantidad exacta que cierra el hueco', () => {
   // 25 g/100 g × 80 g = 20 g justos.
@@ -77,4 +78,18 @@ test('las cantidades salen redondeadas a 5 g', () => {
   for (const s of suggestForGap(21, [atun, pollo, whey])) {
     assert.equal(s.grams % 5, 0, `${s.food.id} dio ${s.grams} g`)
   }
+})
+
+test('un alimento "por unidades" sugiere en unidades enteras, no en gramos sueltos', () => {
+  // 13 g/100 g × 50 g = 6.5 g de proteína por huevo. Para 20 g exactos harían
+  // falta ~3.08 huevos: debe redondear a 3 (150 g), no dejarlo en 154 g.
+  const [s] = suggestForGap(20, [huevo])
+  assert.equal(s.grams % 50, 0, `esperaba un múltiplo de 50 g, dio ${s.grams}`)
+  assert.equal(s.grams, 150, '3 huevos, no una cantidad fraccionaria')
+})
+
+test('un alimento "por unidades" nunca sugiere menos de una unidad', () => {
+  // Un hueco minúsculo no debe redondear a 0 huevos.
+  const [s] = suggestForGap(1, [huevo])
+  assert.ok(s.grams >= 50, `esperaba al menos 1 huevo (50 g), dio ${s.grams}`)
 })

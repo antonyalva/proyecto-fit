@@ -26,6 +26,8 @@ function food(
   proteinPer100g: number,
   defaultPortionG: number,
   category: FoodCategory,
+  /** Nombre y gramos de una unidad, para alimentos que nadie pesa antes de comer. */
+  unit?: [label: string, grams: number],
 ): Food {
   return {
     id,
@@ -34,6 +36,8 @@ function food(
     proteinPer100g,
     defaultPortionG,
     category,
+    unitLabel: unit?.[0],
+    unitGrams: unit?.[1],
     updatedAt: 0,
     deleted: false,
   }
@@ -44,6 +48,7 @@ export const CATEGORY_LABEL: Record<FoodCategory, string> = {
   pescados: 'Pescados y mariscos',
   'huevos-lacteos': 'Huevos y lácteos',
   legumbres: 'Legumbres y granos',
+  frutas: 'Frutas',
   'frutos-secos': 'Frutos secos y semillas',
   suplementos: 'Suplementos',
   otros: 'Otros',
@@ -55,6 +60,7 @@ export const CATEGORY_ORDER: FoodCategory[] = [
   'pescados',
   'huevos-lacteos',
   'legumbres',
+  'frutas',
   'frutos-secos',
   'suplementos',
   'otros',
@@ -90,7 +96,7 @@ export const DEFAULT_FOODS: Food[] = [
   food('f-langostinos', '🦐', 'Langostinos', 20, 120, 'pescados'),
 
   // Huevos y lácteos
-  food('f-huevo', '🥚', 'Huevo', 13, 140, 'huevos-lacteos'),
+  food('f-huevo', '🥚', 'Huevo', 13, 140, 'huevos-lacteos', ['huevo', 50]),
   food('f-clara', '🥚', 'Clara de huevo', 11, 200, 'huevos-lacteos'),
   food('f-queso-fresco', '🧀', 'Queso fresco', 17, 80, 'huevos-lacteos'),
   food('f-requeson', '🧀', 'Requesón', 11, 100, 'huevos-lacteos'),
@@ -107,6 +113,9 @@ export const DEFAULT_FOODS: Food[] = [
   food('f-habas', '🫛', 'Habas frescas', 8, 150, 'legumbres'),
   food('f-quinua', '🌾', 'Quinua cocida', 4.4, 200, 'legumbres'),
   food('f-kiwicha', '🌾', 'Kiwicha cocida', 4, 200, 'legumbres'),
+
+  // Frutas — poca proteína por sí solas, pero cuentan igual en el día
+  food('f-platano', '🍌', 'Plátano', 1.1, 118, 'frutas', ['plátano', 118]),
 
   // Frutos secos y semillas
   food('f-mani', '🥜', 'Maní', 26, 40, 'frutos-secos'),

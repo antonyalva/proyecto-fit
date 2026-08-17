@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '../store'
 import { useToast } from '../toast'
-import { proteinFor } from '../lib/nutrition'
+import { formatQuantity, proteinFor } from '../lib/nutrition'
 import { CATEGORY_LABEL, CATEGORY_ORDER, uid } from '../lib/storage'
 import type { Food, FoodCategory } from '../types'
 
@@ -36,6 +36,17 @@ export function Foods() {
 
   const total = groups.reduce((sum, g) => sum + g.foods.length, 0)
 
+  const unitMode = draft?.unitLabel !== undefined
+
+  function toggleUnitMode(on: boolean) {
+    if (!draft) return
+    setDraft(
+      on
+        ? { ...draft, unitLabel: draft.unitLabel ?? '', unitGrams: draft.unitGrams || draft.defaultPortionG }
+        : { ...draft, unitLabel: undefined, unitGrams: undefined },
+    )
+  }
+
   function commit() {
     if (!draft) return
     if (!draft.name.trim()) {
@@ -50,7 +61,15 @@ export function Foods() {
       toast('No puede haber más de 100 g de proteína en 100 g')
       return
     }
-    saveFood({ ...draft, name: draft.name.trim() })
+    if (unitMode && (!draft.unitLabel?.trim() || !(draft.unitGrams! > 0))) {
+      toast('Pon el nombre y los gramos de la unidad')
+      return
+    }
+    saveFood({
+      ...draft,
+      name: draft.name.trim(),
+      unitLabel: unitMode ? draft.unitLabel!.trim() : undefined,
+    })
     setDraft(null)
     toast('Guardado')
   }
@@ -99,19 +118,79 @@ export function Foods() {
                 }
               />
             </div>
-            <div>
-              <label htmlFor="f-portion">Tu ración (g)</label>
+            {!unitMode && (
+              <div>
+                <label htmlFor="f-portion">Tu ración (g)</label>
+                <input
+                  id="f-portion"
+                  type="number"
+                  inputMode="decimal"
+                  value={draft.defaultPortionG}
+                  onChange={(e) =>
+                    setDraft({ ...draft, defaultPortionG: Number(e.target.value) || 0 })
+                  }
+                />
+              </div>
+            )}
+          </div>
+
+          <label className="check-row">
+            <input
+              type="checkbox"
+              checked={unitMode}
+              onChange={(e) => toggleUnitMode(e.target.checked)}
+            />
+            Se mide por unidades (1 plátano, 2 huevos) en vez de por peso suelto
+          </label>
+
+          {unitMode && (
+            <div className="field field-pair">
+              <div>
+                <label htmlFor="f-unit-label">Nombre de la unidad</label>
+                <input
+                  id="f-unit-label"
+                  value={draft.unitLabel ?? ''}
+                  placeholder="plátano"
+                  onChange={(e) => setDraft({ ...draft, unitLabel: e.target.value })}
+                />
+              </div>
+              <div>
+                <label htmlFor="f-unit-grams">Gramos por unidad</label>
+                <input
+                  id="f-unit-grams"
+                  type="number"
+                  inputMode="decimal"
+                  value={draft.unitGrams ?? ''}
+                  placeholder="118"
+                  onChange={(e) => {
+                    const unitGrams = Number(e.target.value) || 0
+                    // Al cambiar el peso de la unidad, la ración sigue valiendo
+                    // las mismas unidades — se recalculan los gramos, no al revés.
+                    const units = draft.unitGrams ? draft.defaultPortionG / draft.unitGrams : 1
+                    setDraft({ ...draft, unitGrams, defaultPortionG: Math.round(unitGrams * units) })
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {unitMode && (
+            <div className="field">
+              <label htmlFor="f-unit-count">Unidades en tu ración habitual</label>
               <input
-                id="f-portion"
+                id="f-unit-count"
                 type="number"
                 inputMode="decimal"
-                value={draft.defaultPortionG}
-                onChange={(e) =>
-                  setDraft({ ...draft, defaultPortionG: Number(e.target.value) || 0 })
-                }
+                step="0.5"
+                min="0"
+                value={draft.unitGrams ? draft.defaultPortionG / draft.unitGrams : ''}
+                onChange={(e) => {
+                  const units = Number(e.target.value) || 0
+                  setDraft({ ...draft, defaultPortionG: Math.round(units * (draft.unitGrams || 0)) })
+                }}
               />
             </div>
-          </div>
+          )}
 
           <div className="field">
             <label htmlFor="f-category">Categoría</label>
@@ -132,7 +211,7 @@ export function Foods() {
             <div className="row-main">
               <div className="row-title">Al pulsarlo registrará</div>
               <div className="row-sub">
-                {draft.defaultPortionG} g de {draft.name.trim() || 'este alimento'}
+                {formatQuantity(draft, draft.defaultPortionG)} de {draft.name.trim() || 'este alimento'}
               </div>
             </div>
             <span className="row-value" style={{ fontSize: 18 }}>
@@ -190,8 +269,8 @@ export function Foods() {
                   <div className="row-main">
                     <div className="row-title">{f.name}</div>
                     <div className="row-sub">
-                      {f.proteinPer100g} g/100 g · ración de {f.defaultPortionG} g ={' '}
-                      {proteinFor(f, f.defaultPortionG)} g
+                      {f.proteinPer100g} g/100 g · ración de{' '}
+                      {formatQuantity(f, f.defaultPortionG)} = {proteinFor(f, f.defaultPortionG)} g
                     </div>
                   </div>
                   <button

@@ -80,6 +80,8 @@ const toFood = (r: Row): Food => ({
   proteinPer100g: Number(r.protein_per_100g),
   defaultPortionG: Number(r.default_portion_g),
   category: ((r.category as Food['category']) ?? 'otros'),
+  unitLabel: (r.unit_label as string) ?? undefined,
+  unitGrams: r.unit_grams == null ? undefined : Number(r.unit_grams),
   updatedAt: Number(r.client_updated_at),
   deleted: Boolean(r.deleted),
 })
@@ -92,6 +94,8 @@ const fromFood = (userId: string, f: Food): Row => ({
   protein_per_100g: f.proteinPer100g,
   default_portion_g: f.defaultPortionG,
   category: f.category,
+  unit_label: f.unitLabel ?? null,
+  unit_grams: f.unitGrams ?? null,
   deleted: f.deleted,
   client_updated_at: f.updatedAt,
 })
